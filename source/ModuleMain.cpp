@@ -103,6 +103,55 @@ RValue& StartWeatherEvent(
 }
 
 
+RValue& WeatherTomorrow(
+	IN CInstance* Self,
+	IN CInstance* Other,
+	OUT RValue& Result,
+	IN int ArgumentCount,
+	IN RValue** Arguments
+)
+{
+	const auto original = reinterpret_cast<PFUNC_YYGMLScript>(MmGetHookTrampoline(g_ArSelfModule, "WeatherTomorrow"));
+
+	CInstance* global_instance = nullptr;
+	if (!AurieSuccess(g_ModuleInterface->GetGlobalInstance(&global_instance)))
+	{
+		return original(
+			Self,
+			Other,
+			Result,
+			ArgumentCount,
+			Arguments
+		);
+	}
+
+
+	original(
+		Self,
+		Other,
+		Result,
+		ArgumentCount,
+		Arguments
+	);
+
+	if (s_weather == -1)
+		return original(
+			Self,
+			Other,
+			Result,
+			ArgumentCount,
+			Arguments
+		);
+
+	Result = s_weather;
+
+	//g_ModuleInterface->Print(CM_LIGHTGREEN, "gml_Script_weather_tomorrow: %i", ArgumentCount);
+	//g_ModuleInterface->Print(CM_LIGHTGREEN, "gml_Script_weather_tomorrow: %i", Result.ToInt64());
+
+	return Result;
+}
+
+
 
 EXPORTED AurieStatus ModuleInitialize(
 	IN AurieModule* Module,
@@ -164,6 +213,44 @@ EXPORTED AurieStatus ModuleInitialize(
 			__FILE__,
 			__LINE__,
 			"[Forecast v1.0.0] Failed to hook gml_Script_start_new_weather_event@WeatherManager@Weather! Reason: %s",
+			AurieStatusToString(last_status)
+		);
+
+		return last_status;
+	}
+
+	CScript* weather_tomorrow = nullptr;
+	last_status = g_ModuleInterface->GetNamedRoutinePointer(
+		"gml_Script_weather_tomorrow",
+		reinterpret_cast<PVOID*>(&weather_tomorrow)
+	);
+
+	if (!AurieSuccess(last_status))
+	{
+		g_ModuleInterface->PrintError(
+			__FILE__,
+			__LINE__,
+			"[Forecast v1.0.0] Failed to find gml_Script_weather_tomorrow! Reason: %s",
+			AurieStatusToString(last_status)
+		);
+
+		return last_status;
+	}
+
+	last_status = MmCreateHook(
+		g_ArSelfModule,
+		"WeatherTomorrow",
+		weather_tomorrow->m_Functions->m_ScriptFunction,
+		WeatherTomorrow,
+		nullptr
+	);
+
+	if (!AurieSuccess(last_status))
+	{
+		g_ModuleInterface->PrintError(
+			__FILE__,
+			__LINE__,
+			"[Forecast v1.0.0] Failed to hook gml_Script_weather_tomorrow! Reason: %s",
 			AurieStatusToString(last_status)
 		);
 
