@@ -4,9 +4,37 @@ using namespace Aurie;
 using namespace YYTK;
 static YYTKInterface* g_ModuleInterface = nullptr;
 
+static const char* const VERSION = "1.2.0";
+static const char* const GML_SCRIPT_CREATE_NOTIFICATION = "gml_Script_create_notification";
+static const std::string FORECAST_ACCEPTED = "Notifications/Mods/Forecast/updatedForecast";
+
+
 static int s_weather = -1;
 // Valid values for weather are 0 for sunny, 1 for rainy, 2 for thunder, 3 special season weather. -1 "disables" the mod.
 std::set<int> weather_types = {-1, 0, 1, 2, 3};
+
+
+// Taken from AnnaNomolys' StatueOfBoons mod
+void CreateNotification(std::string notification_localization_str, CInstance* Self, CInstance* Other)
+{
+	CScript* gml_script_create_notification = nullptr;
+	g_ModuleInterface->GetNamedRoutinePointer(
+		GML_SCRIPT_CREATE_NOTIFICATION,
+		(PVOID*)&gml_script_create_notification
+	);
+
+	RValue result;
+	RValue notification = RValue(notification_localization_str);
+	RValue* notification_ptr = &notification;
+	gml_script_create_notification->m_Functions->m_ScriptFunction(
+		Self,
+		Other,
+		result,
+		1,
+		{ &notification_ptr }
+	);
+}
+
 
 RValue& UpdateClock(
 	IN CInstance* Self,
@@ -41,6 +69,7 @@ RValue& UpdateClock(
 		}
 
 		s_weather = static_cast<int16_t>(integer_result.ToInt64());
+		CreateNotification(FORECAST_ACCEPTED, Self, Other);
 
 	}
 	return original(
@@ -172,7 +201,8 @@ EXPORTED AurieStatus ModuleInitialize(
 		g_ModuleInterface->PrintError(
 			__FILE__,
 			__LINE__,
-			"[Forecast v1.0.0] Failed to get YYTK_Main interface! Reason: %s. Is YYToolkit installed?",
+			"[Forecast v%s] Failed to get YYTK_Main interface! Reason: %s. Is YYToolkit installed?",
+			VERSION,
 			AurieStatusToString(last_status)
 		);
 
@@ -192,7 +222,8 @@ EXPORTED AurieStatus ModuleInitialize(
 		g_ModuleInterface->PrintError(
 			__FILE__,
 			__LINE__,
-			"[Forecast v1.0.0] Failed to find gml_Script_start_new_weather_event@WeatherManager@Weather! Reason: %s",
+			"[Forecast v%s] Failed to find gml_Script_start_new_weather_event@WeatherManager@Weather! Reason: %s",
+			VERSION,
 			AurieStatusToString(last_status)
 		);
 
@@ -212,7 +243,8 @@ EXPORTED AurieStatus ModuleInitialize(
 		g_ModuleInterface->PrintError(
 			__FILE__,
 			__LINE__,
-			"[Forecast v1.0.0] Failed to hook gml_Script_start_new_weather_event@WeatherManager@Weather! Reason: %s",
+			"[Forecast v%s] Failed to hook gml_Script_start_new_weather_event@WeatherManager@Weather! Reason: %s",
+			VERSION,
 			AurieStatusToString(last_status)
 		);
 
@@ -230,7 +262,8 @@ EXPORTED AurieStatus ModuleInitialize(
 		g_ModuleInterface->PrintError(
 			__FILE__,
 			__LINE__,
-			"[Forecast v1.0.0] Failed to find gml_Script_weather_tomorrow! Reason: %s",
+			"[Forecast v%s] Failed to find gml_Script_weather_tomorrow! Reason: %s",
+			VERSION,
 			AurieStatusToString(last_status)
 		);
 
@@ -250,7 +283,8 @@ EXPORTED AurieStatus ModuleInitialize(
 		g_ModuleInterface->PrintError(
 			__FILE__,
 			__LINE__,
-			"[Forecast v1.0.0] Failed to hook gml_Script_weather_tomorrow! Reason: %s",
+			"[Forecast v%s] Failed to hook gml_Script_weather_tomorrow! Reason: %s",
+			VERSION,
 			AurieStatusToString(last_status)
 		);
 
@@ -269,7 +303,8 @@ EXPORTED AurieStatus ModuleInitialize(
 		g_ModuleInterface->PrintError(
 			__FILE__,
 			__LINE__,
-			"[Forecast v1.0.0] Failed to find gml_Script_update@Clock@Clock! Reason: %s",
+			"[Forecast v%s] Failed to find gml_Script_update@Clock@Clock! Reason: %s",
+			VERSION,
 			AurieStatusToString(last_status)
 		);
 
@@ -289,7 +324,8 @@ EXPORTED AurieStatus ModuleInitialize(
 		g_ModuleInterface->PrintError(
 			__FILE__,
 			__LINE__,
-			"[Forecast v1.0.0] Failed to set a hook on gml_Script_update@Clock@Clock! Reason: %s",
+			"[Forecast v%s] Failed to set a hook on gml_Script_update@Clock@Clock! Reason: %s",
+			VERSION,
 			AurieStatusToString(last_status)
 		);
 
