@@ -4,8 +4,8 @@ using namespace Aurie;
 using namespace YYTK;
 static YYTKInterface* g_ModuleInterface = nullptr;
 
-// Valid values for weather are 0 for sunny, 1 for 
 static int s_weather = -1;
+// Valid values for weather are 0 for sunny, 1 for rainy, 2 for thunder, 3 special season weather. -1 "disables" the mod.
 std::set<int> weather_types = {-1, 0, 1, 2, 3};
 
 RValue& UpdateClock(
@@ -17,6 +17,7 @@ RValue& UpdateClock(
 )
 {
 	const auto original = reinterpret_cast<PFUNC_YYGMLScript>(MmGetHookTrampoline(g_ArSelfModule, "ClockUpdate"));
+	// This part is a modified version of the popup done by ArchieUwU in Time of Mistria
 	if (GetAsyncKeyState(VK_NEXT) & 1)
 	{
 		// Attempt to get a number from the user.
@@ -52,6 +53,7 @@ RValue& UpdateClock(
 
 }
 
+// Callback hooked into "gml_Script_start_new_weather_event@WeatherManager@Weather", early return if s_weather is -1.
 RValue& StartWeatherEvent(
 	IN CInstance* Self,
 	IN CInstance* Other,
@@ -94,7 +96,7 @@ RValue& StartWeatherEvent(
 		Arguments
 	);
 
-	// Theoretically unneeded Print-debugging
+	// The debugging I used for this project
 	// g_ModuleInterface->Print(CM_LIGHTGREEN, "gml_Script_start_new_weather_event@WeatherManager@Weather: %i", ArgumentCount);
 	// g_ModuleInterface->Print(CM_LIGHTGREEN, "gml_Script_start_new_weather_event@WeatherManager@Weather: %i", Arguments[0]->ToInt64());
 
@@ -130,10 +132,10 @@ EXPORTED AurieStatus ModuleInitialize(
 
 	
 
-	CScript* script_3 = nullptr;
+	CScript* start_weather_event = nullptr;
 	last_status = g_ModuleInterface->GetNamedRoutinePointer(
 		"gml_Script_start_new_weather_event@WeatherManager@Weather",
-		reinterpret_cast<PVOID*>(&script_3)
+		reinterpret_cast<PVOID*>(&start_weather_event)
 	);
 
 	if (!AurieSuccess(last_status))
@@ -151,7 +153,7 @@ EXPORTED AurieStatus ModuleInitialize(
 	last_status = MmCreateHook(
 		g_ArSelfModule,
 		"StartWeatherEvent",
-		script_3->m_Functions->m_ScriptFunction,
+		start_weather_event->m_Functions->m_ScriptFunction,
 		StartWeatherEvent,
 		nullptr
 	);
@@ -168,6 +170,7 @@ EXPORTED AurieStatus ModuleInitialize(
 		return last_status;
 	}
 
+	// Taken from Time of Mistria
 	CScript* clock_update_script = nullptr;
 	last_status = g_ModuleInterface->GetNamedRoutinePointer(
 		"gml_Script_update@Clock@Clock",
