@@ -402,6 +402,5 @@ FodyWeavers.xsd
 
 # Only source
 .vs/
-include/
 x64/
 ExamplePlugin.*
